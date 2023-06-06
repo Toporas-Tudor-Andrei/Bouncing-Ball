@@ -249,6 +249,12 @@ void keyboard_bezier(unsigned char key, int x, int y)
 	case 'i':
 		p3.y += 0.1f;
 		break;
+	case 'o':
+		p3.x -= 0.1f;
+		break;
+	case 'p':
+		p3.x += 0.1f;
+		break;
 	}
 	refresh_bezier();
 	refreshControlCircles();
