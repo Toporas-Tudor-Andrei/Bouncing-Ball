@@ -174,10 +174,10 @@ void keyboard_ball(unsigned char key, int x, int y)
 		elevation -= elevationInc;
 		break;
 	case 'c':
-		if (i == (points.size() - 2))
+		if (i >= (points.size() - 2))
 			i = 1;
 		elevation = points[i]/5;
-		i += 3;
+		i += 9;
 		break;
 	case 'r':
 		i = 1;

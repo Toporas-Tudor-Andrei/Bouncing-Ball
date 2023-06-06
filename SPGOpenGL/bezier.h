@@ -30,3 +30,4 @@ void refreshControlCircles();
 void init_bezier();
 void reshape_bezier(int w, int h);
 void keyboard_bezier(unsigned char key, int x, int y);
+void mouse_bezier(int button, int state, int x, int y);

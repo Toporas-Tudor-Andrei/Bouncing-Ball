@@ -25,6 +25,7 @@ int main(int argc, char** argv)
 	glutDisplayFunc(display_bezier);
 	glutReshapeFunc(reshape_bezier);
 	glutKeyboardFunc(keyboard_bezier);
+	//glutMouseFunc(mouse_bezier);
 
 	glutMainLoop();
 

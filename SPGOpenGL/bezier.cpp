@@ -56,11 +56,14 @@ float B3(float u) {
 
 void createPointsVector()
 {
-	//p1:0,0,0; p2:0,3,0; p3:1,3,0; p4:1,0,0;
-	p0 = glm::vec3(0.0f, 2.0f, 0.0f);
-	p1 = glm::vec3(1.0f, 5.0f, 0.0f);
-	p2 = glm::vec3(7.0f, 7.0f, 0.0f);
-	p3 = glm::vec3(10.0f, 7.0f, 0.0f);
+	//p0: 0, -4.8, 0;
+	//p1: 1.1, 2.2, 0;
+	//p2: 2.3, 6.2, 0;
+	//p3: 10, 6.20, 0
+	p0 = glm::vec3(0.0f, -4.8f, 0.0f);
+	p1 = glm::vec3(1.1f, 2.2f, 0.0f);
+	p2 = glm::vec3(2.3f, 6.2f, 0.0f);
+	p3 = glm::vec3(10.0f, 6.2f, 0.0f);
 	for (float u = 0.0f; u <= 1.0f; u += 0.01f) {
 		float x = B0(u) * (-p3.x) + B1(u) * (-p2.x) + B2(u) * (-p1.x) + B3(u) * p0.x;
 		float y = B0(u) * p3.y + B1(u) * p2.y + B2(u) * p1.y + B3(u) * p0.y;
@@ -152,7 +155,7 @@ void init_bezier()
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_bezier);
 	glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(float), &points[0], GL_STATIC_DRAW);
 
-	glGenBuffers(2, &ctrlVBO);
+	glGenBuffers(1, &ctrlVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, ctrlVBO);
 	glBufferData(GL_ARRAY_BUFFER, ctrlPoints.size() * sizeof(float), &ctrlPoints[0], GL_STATIC_DRAW);
 
@@ -250,4 +253,14 @@ void keyboard_bezier(unsigned char key, int x, int y)
 	refresh_bezier();
 	refreshControlCircles();
 	glutPostRedisplay();
+}
+
+void mouse_bezier(int button, int state, int x, int y) {
+	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+		std::cout << " p0.x:" << p0.x << " p0.y:" << p0.y << " p0.z:" << p0.z << std::endl;
+		std::cout << " p1.x:" << p1.x << " p1.y:" << p1.y << " p1.z:" << p1.z << std::endl;
+		std::cout << " p2.x:" << p2.x << " p2.y:" << p2.y << " p2.z:" << p2.z << std::endl;
+		std::cout << " p3.x:" << p3.x << " p3.y:" << p3.y << " p3.z:" << p3.z << std::endl;
+		std::cout << "======================================================" << std::endl;
+	}
 }
