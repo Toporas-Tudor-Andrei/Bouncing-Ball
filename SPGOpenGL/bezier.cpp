@@ -6,6 +6,7 @@ glm::mat4 projectionMatrix_bezier, viewMatrix_bezier;
 std::vector<float> points;
 std::vector<float> ctrlPoints;
 glm::vec3 p0, p1, p2, p3;
+int width, height;
 
 std::string textFileRead_bezier(char* fn)
 {
@@ -80,9 +81,9 @@ void createPointsVector()
 	}
 }
 
-void addControlCircle(float x, float y, float z = 0) {
+void addControlCircle(float x, float y, float z = 0.0f) {
 	float radius = 0.3f;
-	for (float angle = 0.0f; angle < PI_BEZIER * 2.0f; angle += PI_BEZIER / 3.0f) {
+	for (float angle = 0.0f; angle < PI_BEZIER * 2.0f; angle += PI_BEZIER / 4.0f) {
 		ctrlPoints.push_back(x);
 		ctrlPoints.push_back(y);
 		ctrlPoints.push_back(z);
@@ -91,8 +92,8 @@ void addControlCircle(float x, float y, float z = 0) {
 		ctrlPoints.push_back(radius * std::sinf(angle) + y);
 		ctrlPoints.push_back(z);
 
-		ctrlPoints.push_back(radius * std::cosf(angle + PI_BEZIER / 3.0f) + x);
-		ctrlPoints.push_back(radius * std::sinf(angle + PI_BEZIER / 3.0f) + y);
+		ctrlPoints.push_back(radius * std::cosf(angle + PI_BEZIER / 4.0f) + x);
+		ctrlPoints.push_back(radius * std::sinf(angle + PI_BEZIER / 4.0f) + y);
 		ctrlPoints.push_back(z);
 	}
 }
@@ -193,6 +194,8 @@ void init_bezier()
 
 void reshape_bezier(int w, int h)
 {
+	width = w;
+	height = h;
 	glViewport(0, 0, w, h);
 	projectionMatrix_bezier = glm::perspective(PI_BEZIER / 3, (float)w / h, 0.1f, 100.0f);
 	/*
@@ -261,12 +264,95 @@ void keyboard_bezier(unsigned char key, int x, int y)
 	glutPostRedisplay();
 }
 
+glm::vec3 fromScreen2WorldCoords(int x, int y) {
+	const float normalized_x = (2.0f * x / width) - 1.0f;
+	const float normalized_y = 1.0f - (2.0f * y / height);
+
+	glm::mat4 inverse_matrix_;
+
+	inverse_matrix_ = inverse(projectionMatrix_bezier * viewMatrix_bezier);
+
+	const glm::vec4 clip_point = inverse_matrix_ * glm::vec4(normalized_x, normalized_y, 0.0f, 1.0f);
+	return glm::vec3(clip_point) / clip_point.w;
+}
+
+bool isClicked(glm::vec3 ctrlPt, glm::vec3 coords, float alfa, int xcoef = 1) {
+	return
+	xcoef* ctrlPt.x - alfa < coords.x
+		&&
+	coords.x < xcoef* ctrlPt.x + alfa
+		&&
+	ctrlPt.y - alfa < coords.y
+		&&
+	coords.y < ctrlPt.y + alfa;
+}
+
+int selectedPoint = -1;
+
 void mouse_bezier(int button, int state, int x, int y) {
+
+	glm::vec3 coords = fromScreen2WorldCoords(x,y);
+
+	if (isClicked(p3, coords * 100.0f, 0.2f, -1)) selectedPoint = 0;
+	else if (isClicked(p2, coords * 100.0f, 0.2f, -1)) selectedPoint = 1;
+	else if (isClicked(p1, coords * 100.0f, 0.2f, -1)) selectedPoint = 2;
+	else if (isClicked(p0, coords * 100.0f, 0.2f)) selectedPoint = 3;
+	else if (isClicked(p1, coords * 100.0f, 0.2f)) selectedPoint = 4;
+	else if (isClicked(p2, coords * 100.0f, 0.2f)) selectedPoint = 5;
+	else if (isClicked(p3, coords * 100.0f, 0.2f)) selectedPoint = 6;
+	else selectedPoint = -1;
+
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
 		std::cout << " p0.x:" << p0.x << " p0.y:" << p0.y << " p0.z:" << p0.z << std::endl;
 		std::cout << " p1.x:" << p1.x << " p1.y:" << p1.y << " p1.z:" << p1.z << std::endl;
 		std::cout << " p2.x:" << p2.x << " p2.y:" << p2.y << " p2.z:" << p2.z << std::endl;
 		std::cout << " p3.x:" << p3.x << " p3.y:" << p3.y << " p3.z:" << p3.z << std::endl;
+		std::cout 
+			<< "gl coords: " 
+			<< coords.x << "_"
+			<< coords.y << "_"
+			<< coords.z << "_"
+			<< std::endl;
 		std::cout << "======================================================" << std::endl;
+		std::cout << selectedPoint << std::endl;
 	}
+}
+
+void mouseMove_bezier(int x, int y) {
+	glm::vec3 coords = fromScreen2WorldCoords(x, y) * 100.0f;
+	switch (selectedPoint) {
+	case 0:
+		p3.x = -coords.x;
+		p3.y = coords.y;
+		break;
+	case 1:
+		p2.x = -coords.x;
+		p2.y = coords.y;
+		break;
+	case 2:
+		p1.x = -coords.x;
+		p1.y = coords.y;
+		break;
+	case 3:
+		//p0.x = coords.x;
+		p0.y = coords.y;
+		break;
+	case 4:
+		p1.x = coords.x;
+		p1.y = coords.y;
+		break;
+	case 5:
+		p2.x = coords.x;
+		p2.y = coords.y;
+		break;
+	case 6:
+		p3.x = coords.x;
+		p3.y = coords.y;
+		break;
+	default:
+		break;
+	}
+	refresh_bezier();
+	refreshControlCircles();
+	glutPostRedisplay();
 }

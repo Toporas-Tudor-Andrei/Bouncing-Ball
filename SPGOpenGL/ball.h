@@ -21,3 +21,4 @@ void display_ball();
 void init_ball();
 void reshape_ball(int w, int h);
 void keyboard_ball(unsigned char key, int x, int y);
+void mouse_ball(int button, int state, int x, int y);

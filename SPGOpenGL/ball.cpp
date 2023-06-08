@@ -155,33 +155,57 @@ void reshape_ball(int w, int h)
 	*/
 	viewMatrix = glm::lookAt(viewPos, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
 }
+int delay = 7;
+int i = 1;
+bool stop = true;
+
+void startMovement(int value) {
+	stop = false;
+}
+
+void move(int value) {
+	if (i >= (points.size() - 2))
+		i = 1;
+	elevation = points[i] / 5;
+	i += 3;
+	glutPostRedisplay();
+	if (!stop)
+	{
+		glutTimerFunc(delay, move, 0);
+	}
+}
 
 void keyboard_ball(unsigned char key, int x, int y)
 {
-	static int i = 1;
 	switch (key)
 	{
-	case 'a':
-		rotAngle += rotAngleInc;
+	case 'p':
+		stop = true;
 		break;
-	case 's':
-		rotAngle -= rotAngleInc;
+	}
+	glutPostRedisplay();
+}
+
+void mouse_ball(int button, int state, int x, int y) {
+	if (state == GLUT_UP) return;
+	switch (button) {
+	case GLUT_LEFT_BUTTON:
+		stop = true;
+		glutTimerFunc(delay, startMovement, 0);
+		glutTimerFunc(delay + 5, move, 0);
 		break;
-	case 'e':
-		elevation += elevationInc;
-		break;
-	case 'd':
-		elevation -= elevationInc;
-		break;
-	case 'c':
-		if (i >= (points.size() - 2))
-			i = 1;
-		elevation = points[i]/5;
-		i += 9;
-		break;
-	case 'r':
+	case GLUT_RIGHT_BUTTON:
 		i = 1;
-		elevation = points[i] / 5;
+		stop = true;
+		break;
+	case GLUT_MIDDLE_BUTTON:
+		stop = true;
+		break;
+	case 3:
+		delay--;
+		break;
+	case 4:
+		delay++;
 		break;
 	}
 	glutPostRedisplay();

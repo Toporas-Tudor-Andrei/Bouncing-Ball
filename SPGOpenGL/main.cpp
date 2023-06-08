@@ -14,6 +14,7 @@ int main(int argc, char** argv)
 	glutDisplayFunc(display_ball);
 	glutReshapeFunc(reshape_ball);
 	glutKeyboardFunc(keyboard_ball);
+	glutMouseFunc(mouse_ball);
 	//2nd window
 	glutCreateWindow("2ndWindow");
 	glutPositionWindow(900, 200);
@@ -25,7 +26,8 @@ int main(int argc, char** argv)
 	glutDisplayFunc(display_bezier);
 	glutReshapeFunc(reshape_bezier);
 	glutKeyboardFunc(keyboard_bezier);
-	//glutMouseFunc(mouse_bezier);
+	glutMouseFunc(mouse_bezier);
+	glutMotionFunc(mouseMove_bezier);
 
 	glutMainLoop();
 
