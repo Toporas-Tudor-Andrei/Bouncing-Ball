@@ -1,6 +1,8 @@
 #include "ball.h"
 #include "bezier.h"
 
+int ball_wind;
+
 GLuint shader_programme, vao;
 glm::mat4 projectionMatrix, viewMatrix, modelMatrix;
 
@@ -159,6 +161,13 @@ int delay = 7;
 int i = 1;
 bool stop = true;
 
+void postAllWindowsRedisplay() {
+	glutSetWindow(ball_wind);
+	glutPostRedisplay();
+	glutSetWindow(bezier_wind);
+	glutPostRedisplay();
+}
+
 void startMovement(int value) {
 	stop = false;
 }
@@ -167,23 +176,13 @@ void move(int value) {
 	if (i >= (points.size() - 2))
 		i = 1;
 	elevation = points[i] / 5;
+	updateReference();
 	i += 3;
-	glutPostRedisplay();
+	postAllWindowsRedisplay();
 	if (!stop)
 	{
 		glutTimerFunc(delay, move, 0);
 	}
-}
-
-void keyboard_ball(unsigned char key, int x, int y)
-{
-	switch (key)
-	{
-	case 'p':
-		stop = true;
-		break;
-	}
-	glutPostRedisplay();
 }
 
 void mouse_ball(int button, int state, int x, int y) {
@@ -208,5 +207,6 @@ void mouse_ball(int button, int state, int x, int y) {
 		delay++;
 		break;
 	}
+	updateReference();
 	glutPostRedisplay();
 }

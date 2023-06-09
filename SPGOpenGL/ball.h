@@ -14,11 +14,14 @@
 
 #define PI glm::pi<float>()
 
+extern int i;
+extern int ball_wind;
+
 std::string textFileRead_ball(char* fn);
 void printShaderInfoLog_ball(GLuint obj);
 void printProgramInfoLog_ball(GLuint obj);
 void display_ball();
 void init_ball();
 void reshape_ball(int w, int h);
-void keyboard_ball(unsigned char key, int x, int y);
 void mouse_ball(int button, int state, int x, int y);
+void postAllWindowsRedisplay();

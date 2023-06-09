@@ -1,12 +1,21 @@
 #include "bezier.h"
+#include "ball.h"
 
-GLuint shader_programme_bezier, vao_bezier, ctrlVAO;
-GLuint vbo_bezier = 1, ctrlVBO = 2;
+int bezier_wind;
+
+GLuint shader_programme_bezier, vao_bezier, ctrlVAO, referenceVAO;
+GLuint vbo_bezier = 1, ctrlVBO = 2, referenceVBO = 3;
 glm::mat4 projectionMatrix_bezier, viewMatrix_bezier;
 std::vector<float> points;
 std::vector<float> ctrlPoints;
+std::vector<float> referenceP;
 glm::vec3 p0, p1, p2, p3;
 int width, height;
+int selectedPoint = -1;
+float maxY = 6.5f; // magic numbers for not letting the ball be out of screen
+float minY = -8.5f;
+float maxX = 15.0f;
+float minX = -15.0f;
 
 std::string textFileRead_bezier(char* fn)
 {
@@ -36,6 +45,9 @@ void display_bezier()
 	glBindVertexArray(ctrlVAO);
 	glDrawArrays(GL_TRIANGLES, 0, points.size() / 3);
 
+	glBindVertexArray(referenceVAO);
+	glDrawArrays(GL_TRIANGLES, 0, points.size() / 3);
+
 	glFlush();
 }
 
@@ -61,10 +73,10 @@ void createPointsVector()
 	//p1: 1.1, 2.2, 0;
 	//p2: 2.3, 6.2, 0;
 	//p3: 10, 6.20, 0
-	p0 = glm::vec3(0.0f, -4.8f, 0.0f);
-	p1 = glm::vec3(1.1f, 2.2f, 0.0f);
-	p2 = glm::vec3(2.3f, 6.2f, 0.0f);
-	p3 = glm::vec3(10.0f, 6.2f, 0.0f);
+	p0 = glm::vec3(0.0f, -7.45f, 0.0f);
+	p1 = glm::vec3(0.38f, 2.3f, 0.0f);
+	p2 = glm::vec3(1.3f, 6.15f, 0.0f);
+	p3 = glm::vec3(9.38f, 5.92f, 0.0f);
 	for (float u = 0.0f; u <= 1.0f; u += 0.01f) {
 		float x = B0(u) * (-p3.x) + B1(u) * (-p2.x) + B2(u) * (-p1.x) + B3(u) * p0.x;
 		float y = B0(u) * p3.y + B1(u) * p2.y + B2(u) * p1.y + B3(u) * p0.y;
@@ -82,8 +94,9 @@ void createPointsVector()
 }
 
 void addControlCircle(float x, float y, float z = 0.0f) {
-	float radius = 0.3f;
-	for (float angle = 0.0f; angle < PI_BEZIER * 2.0f; angle += PI_BEZIER / 4.0f) {
+	float radius = 0.5f;
+	constexpr float offset = PI_BEZIER / 4.0f;
+	for (float angle = 0.0f; angle < PI_BEZIER * 2.0f; angle += offset) {
 		ctrlPoints.push_back(x);
 		ctrlPoints.push_back(y);
 		ctrlPoints.push_back(z);
@@ -92,8 +105,8 @@ void addControlCircle(float x, float y, float z = 0.0f) {
 		ctrlPoints.push_back(radius * std::sinf(angle) + y);
 		ctrlPoints.push_back(z);
 
-		ctrlPoints.push_back(radius * std::cosf(angle + PI_BEZIER / 4.0f) + x);
-		ctrlPoints.push_back(radius * std::sinf(angle + PI_BEZIER / 4.0f) + y);
+		ctrlPoints.push_back(radius * std::cosf(angle + offset) + x);
+		ctrlPoints.push_back(radius * std::sinf(angle + offset) + y);
 		ctrlPoints.push_back(z);
 	}
 }
@@ -131,13 +144,13 @@ void refresh_bezier() {
 		i += 2;
 	}
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_bezier);
-	glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(float), &points[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(float), &points[0], GL_DYNAMIC_DRAW);
 }
 
 void refreshControlCircles() {
 	createControlPointsVector();
 	glBindBuffer(GL_ARRAY_BUFFER, ctrlVBO);
-	glBufferData(GL_ARRAY_BUFFER, ctrlPoints.size() * sizeof(float), &ctrlPoints[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, ctrlPoints.size() * sizeof(float), &ctrlPoints[0], GL_DYNAMIC_DRAW);
 }
 
 void init_bezier()
@@ -154,11 +167,22 @@ void init_bezier()
 
 	glGenBuffers(1, &vbo_bezier);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_bezier);
-	glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(float), &points[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(float), &points[0], GL_DYNAMIC_DRAW);
 
 	glGenBuffers(1, &ctrlVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, ctrlVBO);
-	glBufferData(GL_ARRAY_BUFFER, ctrlPoints.size() * sizeof(float), &ctrlPoints[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, ctrlPoints.size() * sizeof(float), &ctrlPoints[0], GL_DYNAMIC_DRAW);
+
+	glGenBuffers(1, &referenceVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, referenceVBO);
+	glBufferData(GL_ARRAY_BUFFER, referenceP.size() * sizeof(float), &referenceP[0], GL_DYNAMIC_DRAW);
+
+	referenceVAO = 2;
+	glGenVertexArrays(1, &referenceVAO);
+	glBindVertexArray(referenceVAO);
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, referenceVBO);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 
 	ctrlVAO = 1;
 	glGenVertexArrays(1, &ctrlVAO);
@@ -208,60 +232,58 @@ void reshape_bezier(int w, int h)
 	viewMatrix_bezier = glm::lookAt(glm::vec3(0, 0, 20), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
 }
 
-void keyboard_bezier(unsigned char key, int x, int y)
-{
-	switch (key)
-	{
-		//primul punct de control
-	case 'a':
-		p0.y -= 0.1f;
-		break;
-	case 'q':
-		p0.y += 0.1f;
-		break;
-		//al doilea punct de control
-	case 's':
-		p1.x -= 0.1f;
-		break;
-	case 'f':
-		p1.x += 0.1f;
-		break;
-	case 'e':
-		p1.y += 0.1f;
-		break;
-	case 'd':
-		p1.y -= 0.1f;
-		break;
-		//altreilea punct de control
-	case 'g':
-		p2.x -= 0.1f;
-		break;
-	case 'j':
-		p2.x += 0.1f;
-		break;
-	case 'y':
-		p2.y += 0.1f;
-		break;
-	case 'h':
-		p2.y -= 0.1f;
-		break;
-		//al patrulea punct de control
-	case 'k':
-		p3.y -= 0.1f;
-		break;
-	case 'i':
-		p3.y += 0.1f;
-		break;
-	case 'o':
-		p3.x -= 0.1f;
-		break;
-	case 'p':
-		p3.x += 0.1f;
-		break;
+void createReference() {
+	static glm::vec3 ref;
+	ref.x = points[(size_t)i - 1];
+	ref.y = points[i];
+	ref.z = points[(size_t)i + 1];
+
+	if (!referenceP.empty())
+		referenceP.clear();
+
+	float radius = 0.3f;
+	constexpr float offset = PI_BEZIER / 4.0f;
+	for (float angle = 0.0f; angle < PI_BEZIER * 2.0f; angle += offset) {
+		referenceP.push_back(ref.x);
+		referenceP.push_back(ref.y);
+		referenceP.push_back(ref.z);
+
+		referenceP.push_back(radius * std::cosf(angle) + ref.x);
+		referenceP.push_back(radius * std::sinf(angle) + ref.y);
+		referenceP.push_back(ref.z);
+
+		referenceP.push_back(radius * std::cosf(angle + offset) + ref.x);
+		referenceP.push_back(radius * std::sinf(angle + offset) + ref.y);
+		referenceP.push_back(ref.z);
 	}
-	refresh_bezier();
-	refreshControlCircles();
 	glutPostRedisplay();
+}
+
+void updateReference() {
+	static glm::vec3 ref;
+	int j = 0;
+	ref.x = points[(size_t)i - 1];
+	ref.y = points[i];
+	ref.z = points[(size_t)i + 1];
+
+	float radius = 0.3f;
+	constexpr float offset = PI_BEZIER / 4.0f;
+	for (float angle = 0.0f; angle < PI_BEZIER * 2.0f; angle += offset) {
+		referenceP[j] = ref.x; j++;
+		referenceP[j] = ref.y; j++;
+		referenceP[j] = ref.z; j++;
+
+		referenceP[j] = radius * std::cosf(angle) + ref.x; j++;
+		referenceP[j] = radius * std::sinf(angle) + ref.y; j++;
+		referenceP[j] = ref.z; j++;
+
+		referenceP[j] = radius * std::cosf(angle + offset) + ref.x; j++;
+		referenceP[j] = radius * std::sinf(angle + offset) + ref.y; j++;
+		referenceP[j] = ref.z; j++;
+	}
+	j = 0;
+	glBindBuffer(GL_ARRAY_BUFFER, referenceVBO);
+	glBufferData(GL_ARRAY_BUFFER, referenceP.size() * sizeof(float), &referenceP[0], GL_DYNAMIC_DRAW);
 }
 
 glm::vec3 fromScreen2WorldCoords(int x, int y) {
@@ -276,7 +298,7 @@ glm::vec3 fromScreen2WorldCoords(int x, int y) {
 	return glm::vec3(clip_point) / clip_point.w;
 }
 
-bool isClicked(glm::vec3 ctrlPt, glm::vec3 coords, float alfa, int xcoef = 1) {
+bool isClicked(glm::vec3 ctrlPt, glm::vec3 coords, int xcoef = 1, float alfa = 0.4f) {
 	return
 	xcoef* ctrlPt.x - alfa < coords.x
 		&&
@@ -287,72 +309,65 @@ bool isClicked(glm::vec3 ctrlPt, glm::vec3 coords, float alfa, int xcoef = 1) {
 	coords.y < ctrlPt.y + alfa;
 }
 
-int selectedPoint = -1;
+bool inBoundsY(float y) {
+	return y < maxY && y > minY;
+}
+
+bool inBoundsX(float x) {
+	return x < maxX && x > minX;
+}
 
 void mouse_bezier(int button, int state, int x, int y) {
+	if (button != GLUT_LEFT_BUTTON && state != GLUT_DOWN) return;
 
 	glm::vec3 coords = fromScreen2WorldCoords(x,y);
 
-	if (isClicked(p3, coords * 100.0f, 0.2f, -1)) selectedPoint = 0;
-	else if (isClicked(p2, coords * 100.0f, 0.2f, -1)) selectedPoint = 1;
-	else if (isClicked(p1, coords * 100.0f, 0.2f, -1)) selectedPoint = 2;
-	else if (isClicked(p0, coords * 100.0f, 0.2f)) selectedPoint = 3;
-	else if (isClicked(p1, coords * 100.0f, 0.2f)) selectedPoint = 4;
-	else if (isClicked(p2, coords * 100.0f, 0.2f)) selectedPoint = 5;
-	else if (isClicked(p3, coords * 100.0f, 0.2f)) selectedPoint = 6;
+	if (isClicked(p3, coords * 100.0f, -1)) selectedPoint = 0;
+	else if (isClicked(p2, coords * 100.0f, -1)) selectedPoint = 1;
+	else if (isClicked(p1, coords * 100.0f, -1)) selectedPoint = 2;
+	else if (isClicked(p0, coords * 100.0f)) selectedPoint = 3;
+	else if (isClicked(p1, coords * 100.0f)) selectedPoint = 4;
+	else if (isClicked(p2, coords * 100.0f)) selectedPoint = 5;
+	else if (isClicked(p3, coords * 100.0f)) selectedPoint = 6;
 	else selectedPoint = -1;
-
-	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-		std::cout << " p0.x:" << p0.x << " p0.y:" << p0.y << " p0.z:" << p0.z << std::endl;
-		std::cout << " p1.x:" << p1.x << " p1.y:" << p1.y << " p1.z:" << p1.z << std::endl;
-		std::cout << " p2.x:" << p2.x << " p2.y:" << p2.y << " p2.z:" << p2.z << std::endl;
-		std::cout << " p3.x:" << p3.x << " p3.y:" << p3.y << " p3.z:" << p3.z << std::endl;
-		std::cout 
-			<< "gl coords: " 
-			<< coords.x << "_"
-			<< coords.y << "_"
-			<< coords.z << "_"
-			<< std::endl;
-		std::cout << "======================================================" << std::endl;
-		std::cout << selectedPoint << std::endl;
-	}
 }
 
 void mouseMove_bezier(int x, int y) {
 	glm::vec3 coords = fromScreen2WorldCoords(x, y) * 100.0f;
 	switch (selectedPoint) {
 	case 0:
-		p3.x = -coords.x;
-		p3.y = coords.y;
+		p3.x = inBoundsX(-coords.x) ? -coords.x : p3.x;
+		p3.y = inBoundsY(coords.y) ? coords.y : p3.y;
 		break;
 	case 1:
-		p2.x = -coords.x;
-		p2.y = coords.y;
+		p2.x = inBoundsX(-coords.x) ? -coords.x : p2.x;
+		p2.y = inBoundsY(coords.y) ? coords.y : p2.y;
 		break;
 	case 2:
-		p1.x = -coords.x;
-		p1.y = coords.y;
+		p1.x = inBoundsX(-coords.x) ? -coords.x : p1.x;
+		p1.y = inBoundsY(coords.y) ? coords.y : p1.y;
 		break;
 	case 3:
 		//p0.x = coords.x;
-		p0.y = coords.y;
+		p0.y = inBoundsY(coords.y) ? coords.y : p0.y;
 		break;
 	case 4:
-		p1.x = coords.x;
-		p1.y = coords.y;
+		p1.x = inBoundsX(coords.x) ? coords.x : p1.x;
+		p1.y = inBoundsY(coords.y) ? coords.y : p1.y;
 		break;
 	case 5:
-		p2.x = coords.x;
-		p2.y = coords.y;
+		p2.x = inBoundsX(coords.x) ? coords.x : p2.x;
+		p2.y = inBoundsY(coords.y) ? coords.y : p2.y;
 		break;
 	case 6:
-		p3.x = coords.x;
-		p3.y = coords.y;
+		p3.x = inBoundsX(coords.x) ? coords.x : p3.x;
+		p3.y = inBoundsY(coords.y) ? coords.y : p3.y;
 		break;
 	default:
 		break;
 	}
 	refresh_bezier();
 	refreshControlCircles();
+	updateReference();
 	glutPostRedisplay();
 }

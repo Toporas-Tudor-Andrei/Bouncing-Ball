@@ -15,6 +15,7 @@
 #define PI_BEZIER glm::pi<float>()
 
 extern std::vector<float> points;
+extern int bezier_wind;
 
 std::string textFileRead_bezier(char* fn);
 void display_bezier();
@@ -29,6 +30,7 @@ void refresh_bezier();
 void refreshControlCircles();
 void init_bezier();
 void reshape_bezier(int w, int h);
-void keyboard_bezier(unsigned char key, int x, int y);
 void mouse_bezier(int button, int state, int x, int y);
 void mouseMove_bezier(int x, int y);
+void createReference();
+void updateReference();
