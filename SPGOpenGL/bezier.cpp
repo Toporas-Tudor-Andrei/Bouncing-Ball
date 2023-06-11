@@ -10,7 +10,7 @@ std::vector<float> points;
 std::vector<float> ctrlPoints;
 std::vector<float> referenceP;
 std::vector<float> tgLineP;
-glm::vec3 p0, p1, p2, p3;
+glm::vec3 p0, p1, p2, p3, pm3, pm2, pm1;
 int width, height;
 int selectedPoint = -1;
 float maxY = 6.5f; // magic numbers for not letting the ball be out of screen
@@ -90,9 +90,12 @@ void createPointsVector()
 	p1 = glm::vec3(0.38f, 2.3f, 0.0f);
 	p2 = glm::vec3(1.3f, 6.15f, 0.0f);
 	p3 = glm::vec3(9.38f, 5.92f, 0.0f);
+	pm3 = glm::vec3(-9.38f, 5.92f, 0.0f);
+	pm2 = glm::vec3(-1.3f, 6.15f, 0.0f);
+	pm1 = glm::vec3(-0.38f, 2.3f, 0.0f);
 	for (float u = 0.0f; u <= 1.0f; u += 0.01f) {
-		float x = B0(u) * (-p3.x) + B1(u) * (-p2.x) + B2(u) * (-p1.x) + B3(u) * p0.x;
-		float y = B0(u) * p3.y + B1(u) * p2.y + B2(u) * p1.y + B3(u) * p0.y;
+		float x = B0(u) * (pm3.x) + B1(u) * (pm2.x) + B2(u) * (pm1.x) + B3(u) * p0.x;
+		float y = B0(u) * pm3.y + B1(u) * pm2.y + B2(u) * pm1.y + B3(u) * p0.y;
 		points.push_back(x);
 		points.push_back(y);
 		points.push_back(0.0f);
@@ -109,17 +112,17 @@ void createPointsVector()
 void addTangentLinePoints() {
 	if (!tgLineP.empty())tgLineP.clear();
 
-	tgLineP.push_back(-p3.x);
-	tgLineP.push_back(p3.y);
-	tgLineP.push_back(p3.z);
+	tgLineP.push_back(pm3.x);
+	tgLineP.push_back(pm3.y);
+	tgLineP.push_back(pm3.z);
 
-	tgLineP.push_back(-p2.x);
-	tgLineP.push_back(p2.y);
-	tgLineP.push_back(p2.z);
+	tgLineP.push_back(pm2.x);
+	tgLineP.push_back(pm2.y);
+	tgLineP.push_back(pm2.z);
 
-	tgLineP.push_back(-p1.x);
-	tgLineP.push_back(p1.y);
-	tgLineP.push_back(p1.z);
+	tgLineP.push_back(pm1.x);
+	tgLineP.push_back(pm1.y);
+	tgLineP.push_back(pm1.z);
 
 	tgLineP.push_back(p0.x);
 	tgLineP.push_back(p0.y);
@@ -171,9 +174,9 @@ void createControlPointsVector()
 	if (!ctrlPoints.empty()) {
 		ctrlPoints.clear();
 	}
-	addControlCircle(-p3.x, p3.y);
-	addControlCircle(-p2.x, p2.y);
-	addControlCircle(-p1.x, p1.y);
+	addControlCircle(pm3.x, pm3.y);
+	addControlCircle(pm2.x, pm2.y);
+	addControlCircle(pm1.x, pm1.y);
 	addControlCircle(p0.x, p0.y);
 	addControlCircle(p1.x, p1.y);
 	addControlCircle(p2.x, p2.y);
@@ -183,8 +186,8 @@ void createControlPointsVector()
 void refresh_bezier() {
 	int i = 0;
 	for (float u = 0.0f; u <= 1.0f; u += 0.01f) {
-		float x = B0(u) * (-p3.x) + B1(u) * (-p2.x) + B2(u) * (-p1.x) + B3(u) * p0.x;
-		float y = B0(u) * p3.y + B1(u) * p2.y + B2(u) * p1.y + B3(u) * p0.y;
+		float x = B0(u) * (pm3.x) + B1(u) * (pm2.x) + B2(u) * (pm1.x) + B3(u) * p0.x;
+		float y = B0(u) * pm3.y + B1(u) * pm2.y + B2(u) * pm1.y + B3(u) * p0.y;
 		points[i] = x;
 		i++;
 		points[i] = y;
@@ -400,9 +403,9 @@ void mouse_bezier(int button, int state, int x, int y) {
 
 	glm::vec3 coords = fromScreen2WorldCoords(x,y);
 
-	if (isClicked(p3, coords * 100.0f, -1)) selectedPoint = 0;
-	else if (isClicked(p2, coords * 100.0f, -1)) selectedPoint = 1;
-	else if (isClicked(p1, coords * 100.0f, -1)) selectedPoint = 2;
+	if (isClicked(pm3, coords * 100.0f)) selectedPoint = 0;
+	else if (isClicked(pm2, coords * 100.0f)) selectedPoint = 1;
+	else if (isClicked(pm1, coords * 100.0f)) selectedPoint = 2;
 	else if (isClicked(p0, coords * 100.0f)) selectedPoint = 3;
 	else if (isClicked(p1, coords * 100.0f)) selectedPoint = 4;
 	else if (isClicked(p2, coords * 100.0f)) selectedPoint = 5;
@@ -414,16 +417,16 @@ void mouseMove_bezier(int x, int y) {
 	glm::vec3 coords = fromScreen2WorldCoords(x, y) * 100.0f;
 	switch (selectedPoint) {
 	case 0:
-		p3.x = inBoundsX(-coords.x) ? -coords.x : p3.x;
-		p3.y = inBoundsY(coords.y) ? coords.y : p3.y;
+		pm3.x = inBoundsX(coords.x) ? coords.x : pm3.x;
+		pm3.y = inBoundsY(coords.y) ? coords.y : pm3.y;
 		break;
 	case 1:
-		p2.x = inBoundsX(-coords.x) ? -coords.x : p2.x;
-		p2.y = inBoundsY(coords.y) ? coords.y : p2.y;
+		pm2.x = inBoundsX(coords.x) ? coords.x : pm2.x;
+		pm2.y = inBoundsY(coords.y) ? coords.y : pm2.y;
 		break;
 	case 2:
-		p1.x = inBoundsX(-coords.x) ? -coords.x : p1.x;
-		p1.y = inBoundsY(coords.y) ? coords.y : p1.y;
+		pm1.x = inBoundsX(coords.x) ? coords.x : pm1.x;
+		pm1.y = inBoundsY(coords.y) ? coords.y : pm1.y;
 		break;
 	case 3:
 		//p0.x = coords.x;
