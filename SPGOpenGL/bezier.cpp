@@ -3,12 +3,13 @@
 
 int bezier_wind;
 
-GLuint shader_programme_bezier, vao_bezier, ctrlVAO, referenceVAO;
-GLuint vbo_bezier = 1, ctrlVBO = 2, referenceVBO = 3;
+GLuint shader_programme_bezier, vao_bezier, ctrlVAO, referenceVAO, borderVAO, tangentsVAO;
+GLuint vbo_bezier, ctrlVBO, referenceVBO, borderVBO, tangentsVBO;
 glm::mat4 projectionMatrix_bezier, viewMatrix_bezier;
 std::vector<float> points;
 std::vector<float> ctrlPoints;
 std::vector<float> referenceP;
+std::vector<float> tgLineP;
 glm::vec3 p0, p1, p2, p3;
 int width, height;
 int selectedPoint = -1;
@@ -16,6 +17,7 @@ float maxY = 6.5f; // magic numbers for not letting the ball be out of screen
 float minY = -8.5f;
 float maxX = 15.0f;
 float minX = -15.0f;
+std::vector<float> bounds = { minX,maxY,0.0f, maxX,maxY,0.0f, maxX,minY,0.0f, minX,minY,0.0f, minX,maxY,0.0f };
 
 std::string textFileRead_bezier(char* fn)
 {
@@ -43,10 +45,21 @@ void display_bezier()
 	glDrawArrays(GL_LINE_STRIP, 0, points.size() / 3);
 
 	glBindVertexArray(ctrlVAO);
-	glDrawArrays(GL_TRIANGLES, 0, points.size() / 3);
+	glDrawArrays(GL_TRIANGLES, 0, ctrlPoints.size() / 3);
 
 	glBindVertexArray(referenceVAO);
-	glDrawArrays(GL_TRIANGLES, 0, points.size() / 3);
+	glDrawArrays(GL_TRIANGLES, 0, referenceP.size() / 3);
+
+	glBindVertexArray(borderVAO);
+	glLineWidth(2);
+	glDrawArrays(GL_LINE_STRIP, 0, bounds.size() / 3);
+	glLineWidth(1);
+
+	glBindVertexArray(tangentsVAO);
+	glEnable(GL_LINE_STIPPLE);
+	glLineStipple(1,0x00ff);
+	glDrawArrays(GL_LINES, 0, tgLineP.size() / 3);
+	glDisable(GL_LINE_STIPPLE);
 
 	glFlush();
 }
@@ -91,6 +104,48 @@ void createPointsVector()
 		points.push_back(y);
 		points.push_back(0.0f);
 	}
+}
+
+void addTangentLinePoints() {
+	if (!tgLineP.empty())tgLineP.clear();
+
+	tgLineP.push_back(-p3.x);
+	tgLineP.push_back(p3.y);
+	tgLineP.push_back(p3.z);
+
+	tgLineP.push_back(-p2.x);
+	tgLineP.push_back(p2.y);
+	tgLineP.push_back(p2.z);
+
+	tgLineP.push_back(-p1.x);
+	tgLineP.push_back(p1.y);
+	tgLineP.push_back(p1.z);
+
+	tgLineP.push_back(p0.x);
+	tgLineP.push_back(p0.y);
+	tgLineP.push_back(p0.z);
+
+	tgLineP.push_back(p0.x);
+	tgLineP.push_back(p0.y);
+	tgLineP.push_back(p0.z);
+
+	tgLineP.push_back(p1.x);
+	tgLineP.push_back(p1.y);
+	tgLineP.push_back(p1.z);
+
+	tgLineP.push_back(p2.x);
+	tgLineP.push_back(p2.y);
+	tgLineP.push_back(p2.z);
+
+	tgLineP.push_back(p3.x);
+	tgLineP.push_back(p3.y);
+	tgLineP.push_back(p3.z);
+}
+
+void refreshTangentLinePoints() {
+	addTangentLinePoints();
+	glBindBuffer(GL_ARRAY_BUFFER, tangentsVBO);
+	glBufferData(GL_ARRAY_BUFFER, tgLineP.size() * sizeof(float), &tgLineP[0], GL_DYNAMIC_DRAW);
 }
 
 void addControlCircle(float x, float y, float z = 0.0f) {
@@ -164,6 +219,7 @@ void init_bezier()
 	glClearColor(1, 1, 1, 0);
 
 	glewInit();
+	addTangentLinePoints();
 
 	glGenBuffers(1, &vbo_bezier);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_bezier);
@@ -176,6 +232,28 @@ void init_bezier()
 	glGenBuffers(1, &referenceVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, referenceVBO);
 	glBufferData(GL_ARRAY_BUFFER, referenceP.size() * sizeof(float), &referenceP[0], GL_DYNAMIC_DRAW);
+
+	glGenBuffers(1, &borderVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, borderVBO);
+	glBufferData(GL_ARRAY_BUFFER, bounds.size() * sizeof(float), &bounds[0], GL_STATIC_DRAW);
+
+	glGenBuffers(1, &tangentsVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, tangentsVBO);
+	glBufferData(GL_ARRAY_BUFFER, tgLineP.size() * sizeof(float), &tgLineP[0], GL_DYNAMIC_DRAW);
+
+	borderVAO = 4;
+	glGenVertexArrays(1, &tangentsVAO);
+	glBindVertexArray(tangentsVAO);
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, tangentsVBO);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+
+	borderVAO = 3;
+	glGenVertexArrays(1, &borderVAO);
+	glBindVertexArray(borderVAO);
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, borderVBO);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 
 	referenceVAO = 2;
 	glGenVertexArrays(1, &referenceVAO);
@@ -369,5 +447,6 @@ void mouseMove_bezier(int x, int y) {
 	refresh_bezier();
 	refreshControlCircles();
 	updateReference();
+	refreshTangentLinePoints();
 	glutPostRedisplay();
 }
